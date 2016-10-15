@@ -5,7 +5,8 @@
 # Home page
 #GET     /                           controllers.EmployeeController.index()
 GET     /vin/*path       controllers.EmployeeController.getVin(path: String)
-GET     /out/*path       controllers.EmployeeController.getMilesAndDestination(path: String)
+GET     /url/*path        controllers.EmployeeController.getKeyWordsFromURL(path: String)
+GET     /text/*path       controllers.EmployeeController.getKeyWordsFromText(path: String)
 
 # Routes API Rest
 
