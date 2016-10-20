@@ -9,9 +9,8 @@ scalaVersion := "2.11.6"
 libraryDependencies ++= Seq(
   javaJpa,
   "org.json" % "json" % "20160810",
-
+  "org.postgresql" % "postgresql" % "9.4-1200-jdbc41",
 "org.hibernate" % "hibernate-entitymanager" % "4.3.7.Final",
-  "mysql" % "mysql-connector-java" % "5.1.18",
   "org.dbunit" % "dbunit" % "2.4.9",
   cache,
   javaWs,
