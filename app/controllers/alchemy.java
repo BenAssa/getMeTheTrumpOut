@@ -1,28 +1,16 @@
 package controllers;
 
-import java.util.List;
-
-import play.*;
+import models.AlchemyModel;
 import play.mvc.*;
-import play.libs.Json;
-import play.libs.Json.*;
-import play.data.Form;
-import play.db.jpa.*;
-import java.net.*;
+
 import java.io.*;
-import models.*;
-import views.html.*;
+
 import org.json.*;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.net.URL;
-import java.net.URLConnection;
 
 import java.net.URL;
-import java.io.*;
-import javax.net.ssl.HttpsURLConnection;
 
 
-public class EmployeeController extends Controller
+public class alchemy extends Controller
 {
 String apikey = "kpbjvxm6z5zu94xza25nvvaa";
 
@@ -54,7 +42,7 @@ public Result getVin(String vin)
 //  " &url=www.ibm.com/us-en"
 public Result getKeyWordsFromURL(String url)
 {
-    return getkeywords(url, " &url=" + "www.ibm.com/us-en");
+    return getkeywords(url, " &url=" + url);
 
 }
 
@@ -66,6 +54,9 @@ public Result getKeyWordsFromText(String text)
 }
 
 
+
+
+
 public Result getkeywords(String type, String target)
 {
     String items[] = {"Keywords", "Concepts"};
@@ -74,47 +65,9 @@ public Result getkeywords(String type, String target)
     String result = "";
     String res = "";
     String page = "";
+    res+=AlchemyModel.getWords(type.toLowerCase(),type + "GetRankedKeywords" ,target,"keywords","text");
+    res+= AlchemyModel.getWords(type.toLowerCase(),type + "GetRankedConcepts" ,target,"concepts","text");
 
-    for (int i = 0; i < 2; i++)
-    {
-        String url = "https://gateway-a.watsonplatform.net/calls/" + type.toLowerCase() + "/" + type + "GetRanked" + items[i] + "?model=en-news&outputMode=json";
-        url += target;
-        url += "&apikey=0886d8f9911f566c0292a0953042eda953fa384d";
-
-        try
-        {
-            res+="\n"+items[i]+"::::::\n";
-            URL url2 = new URL(url);
-            //"https://api.edmunds.com/v1/api/tco/usedtruecosttoownbystyleidandzip/101172637/90019?fmt=json&api_key=kpbjvxm6z5zu94xza25nvvaa\n");
-
-            HttpsURLConnection con = (HttpsURLConnection) url2.openConnection();
-            InputStream ins = con.getInputStream();
-            InputStreamReader isr = new InputStreamReader(ins);
-            BufferedReader in = new BufferedReader(isr);
-            String line = in.readLine();
-            int lines = 0;
-            page = "";
-            while (line != null && lines < 1000)
-            {
-                lines++;
-                page += line;
-                line = in.readLine();
-            }           // BufferedReader reader = new BufferedReader(new InputStreamReader(url2.openStream(), "UTF-8"));
-
-            JSONObject obj = new JSONObject(page);
-            JSONArray words = obj.getJSONArray(items[i].toLowerCase());
-            for (int j = 0; j < words.length(); j++)
-            {
-                res += "\n" + words.getJSONObject(j).getString("text");
-
-            }
-
-
-        } catch (Exception e)
-        {
-            return ok("API REST for JAVA Play Framework  " + page + "\n\n123\n\n" +res+"\n|\n"+ e.getMessage());
-        }
-    }
     return ok(res);
 
 
