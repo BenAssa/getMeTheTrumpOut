@@ -53,10 +53,10 @@ public Result getSentence()
     initilize();
     String sentence=request().body().asJson().findPath("sentence").textValue();
 
-    String res= AlchemyModel.getWords("text","TextGetRankedKeywords" , "&text=" +sentence,"keywords","text");
-    res+= AlchemyModel.getWords("text","TextGetRankedConcepts" , "&text=" +sentence,"concepts","text");
-    res+= AlchemyModel.getWords("text","TextGetRankedNamedEntities" , "&text=" +sentence,"entities","text");
-    res+= AlchemyModel.getWords("text","TextGetRankedTaxonomy" , "&text=" +sentence,"taxonomy","label");
+    String res= AlchemyModel.getWords("text","TextGetRankedKeywords" , "&text=" +URLEncoder.encode(sentence),"keywords","text");
+    res+= AlchemyModel.getWords("text","TextGetRankedConcepts" , "&text=" +URLEncoder.encode(sentence),"concepts","text");
+    res+= AlchemyModel.getWords("text","TextGetRankedNamedEntities" , "&text=" +URLEncoder.encode(sentence),"entities","text");
+    res+= AlchemyModel.getWords("text","TextGetRankedTaxonomy" , "&text=" +URLEncoder.encode(sentence),"taxonomy","label");
     String[] ress=res.replaceAll("'","#").split("\n");
     String user="none-yet";
     String sql="";
