@@ -6,7 +6,7 @@
 #GET     /                           controllers.alchemyT     /vin/*path       controllers.AlchemyModel.getVin(path: String)
 GET     /url/*path        controllers.alchemy.getKeyWordsFromURL(path: String)
 GET     /text/*path       controllers.alchemy.getKeyWordsFromText(path: String)
-GET     /poppy/*path       controllers.Poppy.getSentence(path: String)
+POST     /poppy       controllers.Poppy.getSentence()
 
 # Routes API Rest
 

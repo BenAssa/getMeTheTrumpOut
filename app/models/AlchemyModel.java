@@ -20,7 +20,7 @@ public static String getWords(String type,String wordType,String target, String 
     String res;//type + "GetRanked" + items[i]
     String url = "https://gateway-a.watsonplatform.net/calls/" + type + "/" + wordType + "?model=en-news&outputMode=json";
     url += target;
-    url += "&apikey=f060d576eefdd97341bdeeb4bc4205a703e5f9a0";
+    url += "&apikey=d0999248af06b16f7078f57a60130ff451038e17";
     //"0886d8f9911f566c0292a0953042eda953fa384d";
     //f060d576eefdd97341bdeeb4bc4205a703e5f9a0
     try

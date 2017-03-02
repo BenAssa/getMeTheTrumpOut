@@ -12,32 +12,7 @@ import java.net.URL;
 
 public class alchemy extends Controller
 {
-String apikey = "kpbjvxm6z5zu94xza25nvvaa";
 
-public Result getVin(String vin)
-{
-    // return ok(index.render("API REST for JAVA Play Framework"));
-    //vin=2G1FC3D33C9165616
-    String str = "lol";
-    try
-    {
-        URL url = new URL("https://api.edmunds.com/api/vehicle/v2/vins/" + vin + "?fmt=json&api_key=" + apikey + "\n");
-        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(), "UTF-8"));
-
-        str = reader.readLine();
-        JSONObject obj = new JSONObject(str);
-        int highway = obj.getJSONObject("MPG").getInt("highway");
-
-
-        return ok("" + highway);
-
-
-    } catch (Exception e)
-    {
-        return ok("Huston we have an issue " + str + "\n\n\n\n" + e.getMessage());
-    }
-
-}
 
 //  " &url=www.ibm.com/us-en"
 public Result getKeyWordsFromURL(String url)

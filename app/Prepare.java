@@ -1,10 +1,12 @@
 import controllers.alchemy;
 import models.AlchemyModel;
+import models.REDB;
 
 import java.io.*;
 import java.net.URLEncoder;
 import java.sql.DriverManager;
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Set;
@@ -19,6 +21,98 @@ static HashMap<String,String> sentences=new HashMap<String,String>();
 static HashMap<String,String> words=new HashMap<String,String>();
 static HashMap<String,String> relations=new HashMap<String,String>();
 
+private static HashMap<String,String> loadWords(Connection c)
+{
+    HashMap<String, String> words2 = new HashMap<String, String>();
+    String sql = "select * from key_words";
+
+    Statement stmt = null;
+
+    try
+    {
+
+
+        //Class.forName("org.postgresql.Driver");
+
+        stmt = c.createStatement();
+        ResultSet resultSet = stmt.executeQuery(sql);
+        while (resultSet.next() == true)
+        {
+            words2.put(resultSet.getString("text"), resultSet.getString("id"));
+        }
+        return words2;
+
+
+    } catch (Exception e)
+    {
+
+        e.printStackTrace();
+        System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        System.exit(1);
+    }
+    System.exit(1);
+return null;
+}
+
+private static HashMap<String,String> loadSentences(Connection c,int start, int end)
+{
+    HashMap<String, String> words2 = new HashMap<String, String>();
+    String sql = "select * from sentences where id>start and id<end";
+
+    Statement stmt = null;
+
+    try
+    {
+
+
+        //Class.forName("org.postgresql.Driver");
+
+        stmt = c.createStatement();
+        ResultSet resultSet = stmt.executeQuery(sql);
+        while (resultSet.next() == true)
+        {
+            words2.put(resultSet.getString("text"), resultSet.getString("id"));
+        }
+        return words2;
+
+
+    } catch (Exception e)
+    {
+
+        e.printStackTrace();
+        System.err.println(e.getClass().getName() + ": " + e.getMessage());
+        System.exit(1);
+    }
+    System.exit(1);
+    return null;
+}
+
+
+public static boolean insertIntoSentences(HashMap<String,String> map,String table,Connection c,String titles)
+{
+    Statement stmt = null;
+    Set<String> keys=      map.keySet();
+    for (String key : keys) {
+        try
+        {
+            stmt = c.createStatement();
+            String sql = "INSERT INTO "+table+" ("+titles+") ";
+            sql+= "VALUES ('"+key.replaceAll("'","#")+"', "+map.get(key).replaceAll("'","#")+",4);";
+
+            System.err.println(sql);
+            stmt.executeUpdate(sql);
+        }catch (Exception e) {
+            e.printStackTrace();
+            System.err.println(e.getClass().getName()+": "+e.getMessage());
+            return false;
+        }
+
+
+    }
+    return true;
+
+
+}
 
 public static boolean insertTwoColumns(HashMap<String,String> map,String table,Connection c,String titles,boolean secondIsInt)
 {
@@ -53,16 +147,39 @@ public static boolean insertTwoColumns(HashMap<String,String> map,String table,C
 }
 
 
-static void procLine(String line){
+static void procLine(String line,String id){
 if   (line.length()<2)
     return;
     //res+=
     //res+=getWords(type.toLowerCase(),type + "GetRankedConcepts" ,target,"concepts");
-    String senId=""+sentences.size();
-    sentences.put(line,senId);
-    return;
-            /*
-    String res= AlchemyModel.getWords("text","TextGetRankedKeywords" , "&text=" +URLEncoder.encode(line),"keywords","text");
+
+if (false) return;
+
+    String line2=line.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase();
+
+    String wordsArry[]=line2.split(" ");
+    for (int i=0;i<wordsArry.length;i++)
+    {
+        String word= wordsArry[i];
+        if (word.length()>2)
+        {
+            String wordId;
+            if (words.containsKey(word))
+                wordId = words.get(word);
+            else
+            {
+                System.err.println("="+word);
+                wordId = "" + words.size();
+
+                words.put(word,wordId);
+            }
+            int value=word.length()+1;
+            if (value>15)
+                value=15;
+            relations.put( wordId+","+ id,""+value);
+        }
+    }
+   String res= AlchemyModel.getWords("text","TextGetRankedKeywords" , "&text=" +URLEncoder.encode(line),"keywords","text");
      res+= AlchemyModel.getWords("text","TextGetRankedConcepts" , "&text=" +URLEncoder.encode(line),"concepts","text");
     res+= AlchemyModel.getWords("text","TextGetRankedNamedEntities" , "&text=" +URLEncoder.encode(line),"entities","text");
     res+= AlchemyModel.getWords("text","TextGetRankedTaxonomy" , "&text=" +URLEncoder.encode(line),"taxonomy","label");
@@ -79,19 +196,38 @@ String word= ress[i];
             {
                 System.err.println("="+word);
                 wordId = "" + words.size();
-                words.put(word, wordId);
+
+                words.put(word,wordId);
             }
-            relations.put(wordId,senId);
+            int value=15;
+
+            if (word.length()>8)
+                value=30;
+            relations.put( wordId+","+ id,""+value);
         }else
             System.err.println("=="+word);
 
 
 
     }
-*/
+
+}
+
+public static void runFromDB(){
+
+    String t="Can you please adjust to the world wide web";
+    procLine(t,"1")    ;
+
+
+
+
+
 }
 public static void main(String[] args)
 {
+    runFromDB();
+    //if (true)
+    //    return;
     FileInputStream fin;
 
     try {
@@ -108,24 +244,17 @@ public static void main(String[] args)
             line = lines.readLine();
             if (line == null)
                 break;
-            procLine(line)    ;    };
+            String senId=""+sentences.size();
+            sentences.put(line,senId);
+            procLine(line,senId)    ;    };
     }
     // Close our input stream
     fin.close();
-    //HashMap<Integer,String> sentences=new HashMap<Integer,String>();
-    //for testing
-    // sentences.put(1,"one");
-    //sentences.put(2,"two");
+        REDB.initilize(false);
 
-    Connection c = null;
-
-                //Class.forName("org.postgresql.Driver");
-                c = DriverManager
-                        .getConnection("jdbc:postgresql://ec2-54-163-239-218.compute-1.amazonaws.com:5432/d80ffi19ifac15?sslmode=require",
-                                "vabjhytzljjsqq", "K3KiwOY7nPVb3Wy2RCA10K8F9H");
-       // insertTwoColumns(words,"key_words",c,"text,id",false);
-       // insertTwoColumns(relations,"key_word_to_sentences",c,"key_word_id,sentence_id",true);
-        insertTwoColumns(sentences,"sentences",c,"text,id",false);
+        insertTwoColumns(words,"key_words",REDB.c(),"text,id",false);
+        insertTwoColumns(relations,"key_word_to_sentences",REDB.c(),"key_word_id,sentence_id,level",true);
+        insertIntoSentences(sentences,"sentences",REDB.c(),"text,id,level");
 
 
     } catch (Exception e) {
