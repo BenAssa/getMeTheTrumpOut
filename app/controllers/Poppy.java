@@ -59,7 +59,8 @@ public Result getSentence()
     res+= AlchemyModel.getWords("text","TextGetRankedTaxonomy" , "&text=" +URLEncoder.encode(sentence),"taxonomy","label");
     String[] ress=res.replaceAll("'","#").split("\n");
     String user="none-yet";
-    String sql="";
+    String sqlGet="";
+    String sqlPut="";
     try
     {
 
@@ -68,35 +69,44 @@ public Result getSentence()
 
         Connection c = REDB.c();
         stmt = c.createStatement();
-         sql="insert into calls(text,username,time_of) values('"+sentence.replaceAll("'","#")+"','"+user+"',now())";
-System.out.println(sql);
-        stmt.executeUpdate(sql);
+
 
         stmt = c.createStatement();
 
-     sql="(select s.text from sentences  s inner join key_word_to_sentences kts on kts.sentence_id=s.id inner join key_words kw";
-    sql+=" on kw.id=kts.key_word_id  where kw.text in ('all encompasing cathulu'";
+        sqlGet="(select s.text from sentences  s inner join key_word_to_sentences kts on kts.sentence_id=s.id inner join key_words kw";
+        sqlGet+=" on kw.id=kts.key_word_id  where kw.text in ('all encompasing cathulu'";
 
     for (int i=0;i<ress.length;i++)
-        sql+=",'"+ress[i]+"'";
-    sql+=") group by s.text order by sum(kts.level)*sum(kts.level)*random() limit 1 ) union all\n" +
+        sqlGet+=",'"+ress[i]+"'";
+        sqlGet+=") group by s.text order by sum(kts.level)*sum(kts.level)*random() desc limit 1 ) union all\n" +
             " (select text  from sentences order by random() limit 1);";
 
 
             //Class.forName("org.postgresql.Driver");
 
-             ResultSet resultSet=stmt.executeQuery(sql);
+             ResultSet resultSet=stmt.executeQuery(sqlGet);
                     resultSet.next();
             String sentenceOut=resultSet.getString(1).replaceAll("#","'");
 if (resultSet.next())
-            return ok(sentenceOut+"\n\n\nSentence\n\n"+sql );
+{
+    sqlPut="insert into calls(text,username,time_of,answer) values('"+sentence.replaceAll("'","#")+"','"+user+"',now(),'"+sentenceOut+"')";
+        stmt.executeUpdate(sqlPut);
+
+
+            return ok(sentenceOut+"\n\n\nSentence\n\n"+sqlGet );
+    }
             else
-    return ok(sentenceOut+"\n\n\nRandom\n\n"+sql );
+{
+    sqlPut="insert into calls(text,username,time_of,answer) values('"+sentence.replaceAll("'","#")+"','"+user+"',now(),'RANDOM:"+sentenceOut+"')";
+    stmt.executeUpdate(sqlPut);
+    return ok(sentenceOut + "\n\n\nRandom\n\n" + sqlGet);
+
+}
 
 }catch (Exception e) {
     e.printStackTrace();
     System.err.println(e.getClass().getName()+": "+e.getMessage());
-    return ok("not ok at all, something is wrong \n the sql is \n "+sql);
+    return ok("not ok at all, something is wrong \n the sql is \n "+sqlGet +"\n"+sqlPut);
 }
 
 
