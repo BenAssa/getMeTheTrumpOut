@@ -52,7 +52,17 @@ public Result getSentence()
 {
     initilize();
     String sentence=request().body().asJson().findPath("sentence").textValue();
+    sentence=sentence.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase();
 
+    String words[]=sentence.split(" ");
+    int j=0;
+    String wordsStr="";
+    while (j<words.length)
+    {
+        wordsStr=wordsStr+"'"+words[j]+"',";
+        j=j+1;
+    }
+    wordsStr = wordsStr.substring(0, wordsStr.length() - 1);
     String res= AlchemyModel.getWords("text","TextGetRankedKeywords" , "&text=" +URLEncoder.encode(sentence),"keywords","text");
     res+= AlchemyModel.getWords("text","TextGetRankedConcepts" , "&text=" +URLEncoder.encode(sentence),"concepts","text");
     res+= AlchemyModel.getWords("text","TextGetRankedNamedEntities" , "&text=" +URLEncoder.encode(sentence),"entities","text");
@@ -71,20 +81,39 @@ public Result getSentence()
         stmt = c.createStatement();
 
 
+        sqlGet= "select sum(log(val)) as positive, sum(log(1-val))  as negative from  words_positive ";
+        sqlGet+=       " where word in ("+wordsStr+")";
+        ResultSet resultSet=stmt.executeQuery(sqlGet);
+        resultSet.next();
+        String positivecond="";
+        System.err.println(sqlGet);
+
+        try         {
+            if (Math.abs(resultSet.getDouble(1)-resultSet.getDouble(2))>0.3 )
+
+                    if (resultSet.getDouble(1)>resultSet.getDouble(2) )
+                    positivecond= " and positive>negative ";
+                else
+                    positivecond= " and positive<negative ";
+
+        }catch (Exception e) {
+        e.printStackTrace();
+    }
         stmt = c.createStatement();
 
         sqlGet="(select s.text from sentences  s inner join key_word_to_sentences kts on kts.sentence_id=s.id inner join key_words kw";
-        sqlGet+=" on kw.id=kts.key_word_id  where kw.text in ('all encompasing cathulu'";
+        sqlGet+=" on kw.id=kts.key_word_id  inner join  poppy_sentiment  p  on s.id=p.id " ;
+        sqlGet+=    " where kw.text in ('all encompasing cathulu',"+wordsStr;
 
     for (int i=0;i<ress.length;i++)
         sqlGet+=",'"+ress[i]+"'";
-        sqlGet+=") group by s.text order by sum(kts.level)*sum(kts.level)*random() desc limit 1 ) union all\n" +
+        sqlGet+=") "+positivecond+ " group by s.text order by sum(kts.level)*sum(kts.level)*random() desc limit 1 ) union all\n" +
             " (select text  from sentences order by random() limit 1);";
 
 
             //Class.forName("org.postgresql.Driver");
 
-             ResultSet resultSet=stmt.executeQuery(sqlGet);
+              resultSet=stmt.executeQuery(sqlGet);
                     resultSet.next();
             String sentenceOut=resultSet.getString(1).replaceAll("#","'");
 if (resultSet.next())

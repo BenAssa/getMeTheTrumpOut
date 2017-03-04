@@ -41,6 +41,30 @@ CREATE TABLE  words_appearance AS
 select val,word,count(*) as total from words_appearance1
 group by word,val;
 
+CREATE TABLE  words_stat AS
+select word,sum(total) as total from words_appearance
+group by word;
+
+create table words_positive as select ws.word,
+ (-1.0 +wa.total)
+ /ws.total as val, ws.total from
+words_stat ws left join words_appearance wa on wa.word=ws.word and wa.val=4;
+update words_positive set val=1.0/total where val is null;
+
+CREATE TABLE  words_poppy AS
+select id,
+  trim(regexp_split_to_table(
+    lower(text),
+    E'[^a-z0-9_@]+'
+  )) as word
+from sentences rt;
+
+create table poppy_sentiment as
+select id,sum(log(val)) as positive, sum(log(1-val))  as negative from words_poppy pw
+ inner join words_positive  wp on pw.word=wp.word group by pw.id;
+
+
+
 CREATE INDEX words_appearance_sys_id ON words_appearance (sys_id);
 
 CREATE INDEX words_appearance_issue ON words_appearance (issue);
