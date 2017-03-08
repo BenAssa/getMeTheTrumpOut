@@ -52,7 +52,12 @@ public Result getSentence()
 {
     initilize();
     String sentence=request().body().asJson().findPath("sentence").textValue();
+    String username=request().body().asJson().findPath("username").textValue();
+
+    sentence=sentence.replaceAll("20", " ").toLowerCase();
+
     sentence=sentence.replaceAll("[^a-zA-Z0-9 ]", "").toLowerCase();
+
 
     String words[]=sentence.split(" ");
     int j=0;
@@ -68,7 +73,6 @@ public Result getSentence()
     res+= AlchemyModel.getWords("text","TextGetRankedNamedEntities" , "&text=" +URLEncoder.encode(sentence),"entities","text");
     res+= AlchemyModel.getWords("text","TextGetRankedTaxonomy" , "&text=" +URLEncoder.encode(sentence),"taxonomy","label");
     String[] ress=res.replaceAll("'","#").split("\n");
-    String user="none-yet";
     String sqlGet="";
     String sqlPut="";
     try
@@ -81,14 +85,15 @@ public Result getSentence()
         stmt = c.createStatement();
 
 
-        sqlGet= "select sum(log(val)) as positive, sum(log(1-val))  as negative from  words_positive ";
-        sqlGet+=       " where word in ("+wordsStr+")";
-        ResultSet resultSet=stmt.executeQuery(sqlGet);
-        resultSet.next();
+
         String positivecond="";
         System.err.println(sqlGet);
-
+        ResultSet resultSet;
         try         {
+            sqlGet= "select sum(log(val)) as positive, sum(log(1-val))  as negative from  words_positive ";
+            sqlGet+=       " where word in ("+wordsStr+")";
+            resultSet=stmt.executeQuery(sqlGet);
+            resultSet.next();
             if (Math.abs(resultSet.getDouble(1)-resultSet.getDouble(2))>0.3 )
 
                     if (resultSet.getDouble(1)>resultSet.getDouble(2) )
@@ -99,16 +104,42 @@ public Result getSentence()
         }catch (Exception e) {
         e.printStackTrace();
     }
+
+        String noDoubleSendWhere="";
+        String noDoubleSendAnd="";
+
+        if (username!= null && username.length()>1)
+        {
+            stmt = c.createStatement();
+
+
+            sqlGet = "select * from calls where username='" + username + "' order by time_of desc limit 1";
+
+            try
+            {
+                resultSet = stmt.executeQuery(sqlGet);
+                resultSet.next();
+                sentence = sentence + resultSet.getString("text");
+            } catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            noDoubleSendWhere =" where  not EXISTS (select * from calls c where  answer=s.text and username='" +username  +"')" ;
+            noDoubleSendAnd=" and   not EXISTS (select * from calls c where answer=s.text and username='" +username  +"')" ;
+        }
+
+
+
         stmt = c.createStatement();
 
-        sqlGet="(select s.text from sentences  s inner join key_word_to_sentences kts on kts.sentence_id=s.id inner join key_words kw";
-        sqlGet+=" on kw.id=kts.key_word_id  inner join  poppy_sentiment  p  on s.id=p.id " ;
-        sqlGet+=    " where kw.text in ('all encompasing cathulu',"+wordsStr;
 
-    for (int i=0;i<ress.length;i++)
+        sqlGet="(select s.text from sentences  s inner join key_word_to_sentences kts on kts.sentence_id=s.id inner join key_words kw";
+        sqlGet+=" on kw.id=kts.key_word_id  inner join  poppy_sentiment  p  on s.id=p.id  " ;
+        sqlGet+=    " where kw.text in ('all encompasing cathulu',"+wordsStr;
+        for (int i=0;i<ress.length;i++)
         sqlGet+=",'"+ress[i]+"'";
-        sqlGet+=") "+positivecond+ " group by s.text order by sum(kts.level)*sum(kts.level)*random() desc limit 1 ) union all\n" +
-            " (select text  from sentences order by random() limit 1);";
+        sqlGet+=") "+positivecond+noDoubleSendAnd+ " group by s.text order by sum(kts.level)*sum(kts.level)*random() desc limit 1 ) union all\n" +
+            " (select text  from sentences s "+ noDoubleSendWhere+" order by random() limit 1);";
 
 
             //Class.forName("org.postgresql.Driver");
@@ -118,7 +149,7 @@ public Result getSentence()
             String sentenceOut=resultSet.getString(1).replaceAll("#","'");
 if (resultSet.next())
 {
-    sqlPut="insert into calls(text,username,time_of,answer) values('"+sentence.replaceAll("'","#")+"','"+user+"',now(),'"+sentenceOut+"')";
+    sqlPut="insert into calls(text,username,time_of,answer) values('"+sentence.replaceAll("'","#")+"','"+username+"',now(),'"+sentenceOut+"')";
         stmt.executeUpdate(sqlPut);
 
 
@@ -126,7 +157,7 @@ if (resultSet.next())
     }
             else
 {
-    sqlPut="insert into calls(text,username,time_of,answer) values('"+sentence.replaceAll("'","#")+"','"+user+"',now(),'RANDOM:"+sentenceOut+"')";
+    sqlPut="insert into calls(text,username,time_of,answer) values('"+sentence.replaceAll("'","#")+"','"+username+"',now(),'RANDOM:"+sentenceOut+"')";
     stmt.executeUpdate(sqlPut);
     return ok(sentenceOut + "\n\n\nRandom\n\n" + sqlGet);
 
